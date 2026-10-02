@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b6e6e">
+    <title>MedSnap - Smart Pill Identifier</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b6e6e'/%3E%3Cpath d='m10.5 18.5 8-8a3.5 3.5 0 1 0-5-5l-8 8a3.5 3.5 0 1 0 5 5ZM8.7 8.7l6.6 6.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <!-- Reusable icons -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-pill" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+        <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+        <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+        <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></symbol>
+    </svg>
+
+    <header class="app-bar">
+        <div class="brand">
+            <span class="brand-mark"><svg><use href="#i-pill"/></svg></span>
+            <div>
+                <h1>MedSnap</h1>
+                <p>Pill &amp; dosage identifier</p>
+            </div>
+        </div>
+        <button id="history-btn" class="icon-btn" type="button" aria-label="Scan history">
+            <svg><use href="#i-history"/></svg>
+        </button>
+    </header>
+
+    <main>
+        <!-- Desktop: hand off to the phone, or upload / use the webcam here -->
+        <section id="desktop-view" class="hidden">
+            <div class="desktop-grid">
+                <div class="card qr-card">
+                    <h2>Scan with your phone</h2>
+                    <p class="muted">Point your phone's camera at this code to open MedSnap there.</p>
+                    <div id="qrcode"></div>
+                    <p id="qr-warning" class="note warn hidden">
+                        <svg><use href="#i-alert"/></svg>
+                        <span>This page is open on <strong>localhost</strong>, so your phone can't reach it. Open it via your computer's network address (over HTTPS) to use the QR code.</span>
+                    </p>
+                </div>
+                <div class="card">
+                    <h2>Or use this computer</h2>
+                    <label id="dropzone" class="dropzone" for="file-input-desktop">
+                        <svg><use href="#i-upload"/></svg>
+                        <strong>Drop a photo of the label</strong>
+                        <span class="muted">or click to choose a file</span>
+                        <input type="file" id="file-input-desktop" accept="image/*" hidden>
+                    </label>
+                    <button id="use-webcam-btn" class="btn btn-secondary btn-block" type="button">
+                        <svg><use href="#i-camera"/></svg> Use webcam instead
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live camera scanner -->
+        <section id="scanner-view" class="hidden">
+            <div id="viewfinder" class="viewfinder">
+                <video id="camera-stream" autoplay playsinline muted></video>
+                <canvas id="frozen-frame" class="hidden"></canvas>
+                <div id="scan-frame" class="scan-frame">
+                    <span class="corner tl"></span><span class="corner tr"></span>
+                    <span class="corner bl"></span><span class="corner br"></span>
+                    <div class="scan-line"></div>
+                </div>
+                <div id="status-chip" class="status-chip">Starting camera…</div>
+                <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>
+
+                <div id="camera-error" class="camera-error hidden">
+                    <svg><use href="#i-camera"/></svg>
+                    <strong>Camera unavailable</strong>
+                    <p id="camera-error-text">Allow camera access in your browser settings, or upload a photo instead.</p>
+                    <label class="btn btn-primary" for="file-input">
+                        <svg><use href="#i-image"/></svg> Upload a photo
+                    </label>
+                </div>
+            </div>
+
+            <div id="zoom-presets" class="zoom-presets hidden" role="group" aria-label="Zoom"></div>
+
+            <div class="controls">
+                <label class="round-btn" for="file-input" aria-label="Choose a photo">
+                    <svg><use href="#i-image"/></svg>
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                </label>
+                <button id="capture-btn" class="shutter" type="button" aria-label="Scan label" disabled>
+                    <span></span>
+                </button>
+                <button id="torch-btn" class="round-btn" type="button" aria-label="Toggle flash" aria-pressed="false" disabled>
+                    <svg><use href="#i-flash"/></svg>
+                </button>
+            </div>
+
+            <ul class="tips">
+                <li>Fill the frame with the <strong>ingredient list</strong> (Komposisi).</li>
+                <li>Hold ~15&nbsp;cm away — use zoom rather than moving closer.</li>
+                <li>Tilt the box to avoid glare. Sideways text is fine.</li>
+            </ul>
+        </section>
+    </main>
+
+    <!-- Results sheet -->
+    <div id="sheet-backdrop" class="sheet-backdrop hidden"></div>
+    <section id="results-sheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="results-title">
+        <div class="sheet-handle"></div>
+        <header class="sheet-header">
+            <h2 id="results-title">Results</h2>
+            <button class="icon-btn" type="button" data-close-sheet aria-label="Close">
+                <svg><use href="#i-close"/></svg>
+            </button>
+        </header>
+        <div id="results-body" class="sheet-body"></div>
+    </section>
+
+    <!-- History sheet -->
+    <section id="history-sheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="history-title">
+        <div class="sheet-handle"></div>
+        <header class="sheet-header">
+            <h2 id="history-title">Recent scans</h2>
+            <button class="icon-btn" type="button" data-close-sheet aria-label="Close">
+                <svg><use href="#i-close"/></svg>
+            </button>
+        </header>
+        <div id="history-body" class="sheet-body"></div>
+    </section>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="ocr-utils.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

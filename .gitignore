@@ -1,0 +1,16 @@
+# local backups / old copies
+_backup_original/
+MedSnap/
+
+# benchmark: dependencies and generated data (regenerate with `npm run gen` in bench/)
+bench/node_modules/
+bench/imgs/
+bench/hard/
+bench/color/
+bench/*.y4m
+bench/label_frame.png
+bench/shot-*.png
+*.traineddata
+
+.DS_Store
+Thumbs.db

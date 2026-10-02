@@ -1,0 +1,16 @@
+{
+  "name": "medsnap-bench",
+  "private": true,
+  "description": "Offline accuracy benchmark and browser tests for MedSnap's OCR pipeline",
+  "scripts": {
+    "gen": "python gen_easy.py && python gen_hard.py && python gen_color.py && python gen_webcam.py",
+    "test:text": "node text-matching.js && node false-positives.js",
+    "bench": "node benchmark.js v2 && node benchmark.js v1",
+    "e2e": "node e2e.js all"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^23.0.0",
+    "tesseract.js": "5.1.1"
+  }
+}
